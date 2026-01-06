@@ -3,7 +3,7 @@
 
 Application::Application() {
 
-    m_window = std::make_unique<Window>(800, 600, "Intel Task Zachariasz Slupski");
+    m_window = std::make_unique<Window>(1000, 800, "Intel Task Zachariasz Slupski");
 
     m_renderer = std::make_unique<VulkanRenderer>(*m_window);
 
@@ -18,9 +18,9 @@ void Application::run() {
     while (!m_window->shouldClose()) {
         m_window->pollEvents();
 
-        //m_renderer->drawFrame(m_triangles);
+        m_renderer->drawFrame();
     }
 
-   // m_renderer->waitIdle();
+    m_renderer->waitIdle();
 }
 

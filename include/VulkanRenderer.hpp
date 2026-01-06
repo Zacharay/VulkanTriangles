@@ -30,6 +30,8 @@ public:
     VulkanRenderer(Window& window);
     ~VulkanRenderer();
 
+    void drawFrame();
+    void waitIdle();
 private:
     Window& m_window;
 
@@ -48,6 +50,13 @@ private:
     VkRenderPass m_renderPass;
     VkPipeline m_graphicsPipeline;
     VkPipelineLayout m_pipelineLayout;
+    VkCommandPool m_commandPool;
+    VkCommandBuffer m_commandBuffer;
+    std::vector<VkFramebuffer> m_swapChainFramebuffers;
+
+    VkSemaphore m_imageAvailableSemaphore;
+    VkSemaphore m_renderFinishedSemaphore;
+    VkFence m_inFlightFence;
 
 
     void initVulkan();
@@ -60,9 +69,13 @@ private:
     void createImageViews();
     void createRenderPass();
     void createGraphicsPipeline();
+    void createFramebuffers();
+    void createCommandPool();
+    void createCommandBuffer();
+    void createSyncObjects();
 
 
-
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void setupDebugMessenger();
     bool checkValidationLayerSupport();
 
