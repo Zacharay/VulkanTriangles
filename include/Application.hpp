@@ -24,6 +24,11 @@ private:
     float lastMouseY = 400.0f;
     bool firstMouse = true;
 
-    void initTriangles(int numberOfTriangles);
+    int m_totalTriangles;
+    int m_visibleTriangles;
+    bool m_cullingOn;
+
+    void initTriangles();
+    void setWindowTitle(int frameCount,double msPerFrame);
     void handleInput(float deltaTime);
 };

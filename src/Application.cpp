@@ -7,11 +7,16 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-Application::Application(const int numberOfTriangles) {
+Application::Application(const int numberOfTriangles):m_totalTriangles(numberOfTriangles) {
 
-    initTriangles(numberOfTriangles);
+    m_visibleTriangles = m_totalTriangles;
+    m_cullingOn = false;
 
-    m_window = std::make_unique<Window>(1280, 720, "Intel Task Zachariasz Slupski");
+    initTriangles();
+
+    m_window = std::make_unique<Window>(1600, 1000, "Intel Task Zachariasz Slupski");
+
+    setWindowTitle(0,0);
 
     m_renderer = std::make_unique<VulkanRenderer>(*m_window,m_vertices);
 
@@ -28,16 +33,16 @@ Application::~Application() {
 
 }
 
-void Application::initTriangles(const int numberOfTriangles) {
+void Application::initTriangles() {
 
-    m_vertices.reserve(numberOfTriangles * 3);
+    m_vertices.reserve(m_totalTriangles * 3);
 
     std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> posDist(-100.0f, 100.0f);
     std::uniform_real_distribution<float> colDist(0.0f, 1.0f);
     std::uniform_real_distribution<float> sizeDist(0.2f, 0.8f);
 
-    for (int i = 0; i < numberOfTriangles; i++) {
+    for (int i = 0; i < m_totalTriangles; i++) {
 
         float x = posDist(rng);
         float y = posDist(rng);
@@ -59,6 +64,9 @@ void Application::initTriangles(const int numberOfTriangles) {
 void Application::run() {
     auto lastTime = std::chrono::high_resolution_clock::now();
 
+    float fpsTimer = 0.0f;
+    int frameCount = 0;
+
     while (!m_window->shouldClose()) {
         m_window->pollEvents();
 
@@ -67,6 +75,18 @@ void Application::run() {
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = currentTime;
 
+        fpsTimer += deltaTime;
+        frameCount++;
+
+        if (fpsTimer >= 1.0) {
+
+            double msPerFrame = 1000.0 / (double)frameCount;
+
+            setWindowTitle(frameCount,msPerFrame);
+
+            frameCount = 0;
+            fpsTimer = 0.0f;
+        }
 
         handleInput(deltaTime);
 
@@ -132,5 +152,18 @@ void Application::handleInput(float deltaTime) {
 
     m_camera->processMouseInput(xoffset * MOUSE_SENSITIVITY, yoffset * MOUSE_SENSITIVITY) ;
 }
+void Application::setWindowTitle(int frameCount,double msPerFrame) {
+    std::string cullingString = m_cullingOn ? "Culling: On" : "Culling: Off";
+
+    std::string title = "Intel Task - " + std::to_string(frameCount) + " FPS | " +
+                        std::to_string(msPerFrame) + " ms" + " | " +
+                            "Tris: "+ std::to_string(m_visibleTriangles)+"/"+std::to_string(m_totalTriangles)+" | "+ cullingString;
+
+
+    glfwSetWindowTitle(m_window->getNativeWindow(), title.c_str());
+
+
+}
+
 
 
