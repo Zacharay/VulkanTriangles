@@ -17,7 +17,7 @@ public:
     bool shouldClose() const;
     void pollEvents();
 
-
+    float getAspectRatio()const{return static_cast<float>(m_width) / static_cast<float>(m_height);}
     void createSurface(VkInstance instance, VkSurfaceKHR* surface);
     void getFramebufferSize(int* width, int* height) const;
 

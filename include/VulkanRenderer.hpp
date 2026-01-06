@@ -1,5 +1,6 @@
 // VulkanRenderer.hpp
 #pragma once
+#include "glm/glm.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -9,6 +10,45 @@
 #include <optional>
 
 #include "Window.hpp"
+#include <array>
+
+
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+
+    static VkVertexInputBindingDescription getBindingDescription() {
+        VkVertexInputBindingDescription bindingDescription{};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return bindingDescription;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        return attributeDescriptions;
+    }
+
+};
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -27,14 +67,16 @@ struct SwapChainSupportDetails {
 
 class VulkanRenderer {
 public:
-    VulkanRenderer(Window& window);
+    VulkanRenderer(Window& window,const std::vector<Vertex>& vertices);
     ~VulkanRenderer();
 
-    void drawFrame();
+    void drawFrame(const UniformBufferObject& ubo);
     void waitIdle();
 private:
     Window& m_window;
+    const int MAX_FRAMES_IN_FLIGHT = 2;
 
+    uint32_t m_currentFrame = 0;
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
@@ -49,15 +91,25 @@ private:
     VkExtent2D m_swapChainExtent;
     VkRenderPass m_renderPass;
     VkPipeline m_graphicsPipeline;
+    VkDescriptorSetLayout m_descriptorSetLayout;
+    VkDescriptorPool m_descriptorPool;
+    std::vector<VkDescriptorSet> m_descriptorSets;
     VkPipelineLayout m_pipelineLayout;
     VkCommandPool m_commandPool;
-    VkCommandBuffer m_commandBuffer;
+    std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkFramebuffer> m_swapChainFramebuffers;
 
-    VkSemaphore m_imageAvailableSemaphore;
-    VkSemaphore m_renderFinishedSemaphore;
-    VkFence m_inFlightFence;
+    std::vector<VkSemaphore>  m_imageAvailableSemaphores;
+    std::vector<VkSemaphore>  m_renderFinishedSemaphores;
+    std::vector<VkFence>  m_inFlightFences;
 
+    VkBuffer m_vertexBuffer;
+    VkDeviceMemory m_vertexBufferMemory;
+    std::vector<VkBuffer> m_uniformBuffers;
+    std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+    std::vector<void*> m_uniformBuffersMapped;
+
+    std::vector<Vertex> m_vertices;
 
     void initVulkan();
 
@@ -68,12 +120,20 @@ private:
     void createSwapChain();
     void createImageViews();
     void createRenderPass();
+    void createDescriptorSetLayout();
+    void createDescriptorPool();
+    void createDescriptorSets();
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
+    void createVertexBuffers();
+    void createUniformBuffers();
     void createCommandBuffer();
     void createSyncObjects();
+    void updateUniformBuffer(uint32_t currentImage, const UniformBufferObject& ubo);
 
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) ;
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void setupDebugMessenger();
@@ -88,6 +148,7 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     std::vector<const char*> getRequiredExtensions();
     VkShaderModule createShaderModule(const std::vector<char>& code);
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     void cleanupVulkan();
 
