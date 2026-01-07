@@ -20,7 +20,8 @@ add_executable(VulkanTriangles src/main.cpp
         include/VulkanRenderer.hpp
         src/VulkanRenderer.cpp
         include/Camera.hpp
-        src/Camera.cpp)
+        src/Camera.cpp
+        include/Frustum.hpp)
 
 
 target_include_directories(VulkanTriangles PRIVATE

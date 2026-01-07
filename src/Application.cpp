@@ -11,6 +11,7 @@ Application::Application(const int numberOfTriangles):m_totalTriangles(numberOfT
 
     m_visibleTriangles = m_totalTriangles;
     m_cullingOn = false;
+    m_meshNeedsFullRestore = false;
 
     initTriangles();
 
@@ -55,9 +56,23 @@ void Application::initTriangles() {
         float zTilt2 = sizeDist(rng) - (s/2.0f);
         float zTilt3 = sizeDist(rng) - (s/2.0f);
 
-        m_vertices.push_back({ glm::vec3(x,     y - s, z + zTilt1), color });
-        m_vertices.push_back({ glm::vec3(x + s, y + s, z + zTilt2), color });
-        m_vertices.push_back({ glm::vec3(x - s, y + s, z + zTilt3), color });
+        Vertex v1 = {{x,     y + s, z + zTilt1}, color};
+        Vertex v2 = {{x + s, y - s, z + zTilt2}, color};
+        Vertex v3 = {{x - s, y - s, z + zTilt3}, color};
+
+        glm::vec3 center = (v1.position + v2.position + v3.position) / 3.0f;
+
+        float r1 = glm::distance(center, v1.position);
+        float r2 = glm::distance(center, v2.position);
+        float r3 = glm::distance(center, v3.position);
+        float radius = std::max(r1,r2);
+        radius = std::max(radius,r3);
+
+        m_allTriangles.push_back({v1, v2, v3, center, radius});
+
+        m_vertices.push_back(v1);
+        m_vertices.push_back(v2);
+        m_vertices.push_back(v3);
     }
 }
 
@@ -80,9 +95,10 @@ void Application::run() {
 
         if (fpsTimer >= 1.0) {
 
-            double msPerFrame = 1000.0 / (double)frameCount;
+            m_lastFPS = frameCount;
+            m_lastFrameTime = 1000.0 / (double)frameCount;
 
-            setWindowTitle(frameCount,msPerFrame);
+            setWindowTitle(m_lastFPS, m_lastFrameTime);
 
             frameCount = 0;
             fpsTimer = 0.0f;
@@ -105,6 +121,52 @@ void Application::run() {
 
         ubo.proj[1][1] *= -1;
 
+        glm::mat4 projForCulling = ubo.proj;
+        projForCulling[1][1] *= -1;
+
+        m_frustum.update(ubo.proj * ubo.view);
+
+
+        if (m_cullingOn) {
+
+            m_visibleVertices.clear();
+            m_visibleTriangles = 0;
+
+            for(const auto& t : m_allTriangles) {
+                if (m_frustum.checkSphere(t.center, t.radius)) {
+                    m_visibleVertices.push_back(t.v1);
+                    m_visibleVertices.push_back(t.v2);
+                    m_visibleVertices.push_back(t.v3);
+                    m_visibleTriangles++;
+                }
+            }
+
+
+            m_renderer->updateVertexBuffer(m_visibleVertices);
+
+            m_meshNeedsFullRestore = true;
+
+        } else {
+
+            if (m_meshNeedsFullRestore) {
+                m_visibleVertices.clear();
+
+                for(const auto& t : m_allTriangles) {
+                    m_visibleVertices.push_back(t.v1);
+                    m_visibleVertices.push_back(t.v2);
+                    m_visibleVertices.push_back(t.v3);
+                }
+
+
+                m_renderer->updateVertexBuffer(m_visibleVertices);
+
+
+                m_visibleTriangles = m_totalTriangles;
+
+                m_meshNeedsFullRestore = false;
+            }
+
+        }
 
         m_renderer->drawFrame(ubo);
     }
@@ -114,6 +176,18 @@ void Application::run() {
 
 void Application::handleInput(float deltaTime) {
     GLFWwindow* window = m_window->getNativeWindow();
+
+
+    if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS) {
+        if (!m_f1Pressed) {
+            m_cullingOn = !m_cullingOn;
+            m_f1Pressed = true;
+
+            setWindowTitle(m_lastFPS, m_lastFrameTime);
+        }
+    } else {
+        m_f1Pressed = false;
+    }
 
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -127,6 +201,7 @@ void Application::handleInput(float deltaTime) {
         m_camera->processKeyboardInput(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         m_camera->processKeyboardInput(RIGHT, deltaTime);
+
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
         m_camera->processKeyboardInput(UP, deltaTime);
