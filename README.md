@@ -45,7 +45,7 @@ The project uses a standard CMake build workflow.
    ```
 3. Generate build files:
    ```bash
-   cmake ..
+   cmake -DCMAKE_BUILD_TYPE=Release ..
    ```
 4. Compile the application:
    ```bash
