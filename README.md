@@ -56,12 +56,12 @@ The executable VulkanTriangles will be created in the build directory. Compiled 
 ## Usage
 The application accepts an optional command-line argument to specify the number of triangles (range: 1 - 10,000). The default value is 1000.
 ```bash
-./IntelTaskVulkan [triangle_count]
+./VulkanTriangles [triangle_count]
 ```
 Examples:
 ```bash
-./IntelTaskVulkan        # Run with default 1000 triangles
-./IntelTaskVulkan 5000   # Run with 5000 triangles
+./VulkanTriangles        # Run with default 1000 triangles
+./VulkanTriangles 5000   # Run with 5000 triangles
 ```
 
 ## Controls
