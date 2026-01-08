@@ -53,7 +53,7 @@ The project uses a standard CMake build workflow.
    ```
 The executable VulkanTriangles will be created in the build directory. Compiled shaders (.spv) are automatically copied to the executable's location.
 
-##Usage
+## Usage
 The application accepts an optional command-line argument to specify the number of triangles (range: 1 - 10,000). The default value is 1000.
 ```bash
 ./IntelTaskVulkan [triangle_count]
